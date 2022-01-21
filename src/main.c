@@ -129,7 +129,7 @@ int main(void)
 
             lcd_clear();
             lcd_gotoxy(0,0);
-            sprintf(text,"Teplota: ",temperature/10);
+            sprintf(text,"Teplota: %3u",temperature/10);
             lcd_puts(text);
         }
         hodnota += ncoder();
