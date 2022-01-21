@@ -104,7 +104,7 @@ int8_t ncoder(void)
     return 0;
 }
 
-void main(void)
+int main(void)
 {
     char text[32];
     uint32_t voltage = 0;
