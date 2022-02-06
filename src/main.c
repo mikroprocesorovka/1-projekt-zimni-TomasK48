@@ -82,14 +82,13 @@ void setup(void)
     // počkáme než se AD převodník rozběhne (~7us)
     ADC2_Startup_Wait();
 }
-
-int8_t ncoder(void)
+static int minuly = 0;
+int8_t get_ncoder(void)
 {
-    uint8_t minuly = 0;
     if (minuly == 0 && NCODER_GET_CLK == 1){
         minuly = 1;
     if (NCODER_GET_DATA == 0){
-        return 1; 
+        return 1;
     }else{
         return -1;
     }
@@ -110,8 +109,9 @@ int main(void)
     uint32_t voltage = 0;
     uint32_t temperature = 0;
     uint32_t time = 0;
+    uint32_t time1 = 0;
     uint16_t ADCx= 0;
-    uint16_t hodnota = 0;
+    uint32_t hodnota = 0;
     setup();
 
     while (1) {
@@ -126,13 +126,18 @@ int main(void)
             temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;
             printf("value %ld \n \r", voltage);
             printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);
-
+            
             lcd_clear();
             lcd_gotoxy(0,0);
             sprintf(text,"Teplota: %3u",temperature/10);
             lcd_puts(text);
         }
-        hodnota += ncoder();
+        if (milis() - time1 > 200){
+            time1=milis();
+            hodnota += get_ncoder();
+            printf("Žádaná hodnota: %ld \n \r",hodnota);
+        }
+        
     }
 }
 
