@@ -3,9 +3,10 @@
 #include "spse_stm8.h"
 #include "stm8_hd44780.h"
 
-/*#include "delay.h"*/
-#include <stdio.h>*/
+#include "delay.h"
+#include "stdio.h"
 #include "../lib/uart.c"*/
+#include  "assert.h"
 
 #define _ISOC99_SOURCE
 #define _GNU_SOURCE
@@ -20,16 +21,21 @@
 #define BTN_PIN  GPIO_PIN_4
 #define BTN_PUSH (GPIO_ReadInputPin(BTN_PORT, BTN_PIN)==RESET) 
 
-#define NCODER_CLK_PORT GPIOE
-#define NCODER_DATA_PORT GPIOE
-#define NCODER_CLK_PIN GPIO_PIN_1
-#define NCODER_DATA_PIN GPIO_PIN_2
+#define NCODER_CLK_PORT GPIOD
+#define NCODER_DATA_PORT GPIOD
+#define NCODER_CLK_PIN GPIO_PIN_5
+#define NCODER_DATA_PIN GPIO_PIN_6
 #define NCODER_GET_CLK (GPIO_ReadInputPin(NCODER_CLK_PORT, NCODER_CLK_PIN)!=RESET)
 #define NCODER_GET_DATA (GPIO_ReadInputPin(NCODER_DATA_PORT, NCODER_DATA_PIN)!=RESET)
-#define NCODER_SWT_PORT GPIOB
-#define NCODER_SWT_PIN GPIO_PIN_7
-#define NCODER_SWT (GPIO_ReadInputPin(NCODER_SWT_PORT, NCODER_SWT_PIN)== RESET)
+#define swt_PORT GPIOB
+#define swt_PIN GPIO_PIN_7
+#define swt (GPIO_ReadInputPin(swt_PORT, swt_PIN)== RESET)
 
+#define VETRAK_PORT GPIOE
+#define VETRAK_PIN GPIO_PIN_1
+#define VETRAK_OFF GPIO_WriteHigh(VETRAK_PORT, VETRAK_PIN)
+#define VETRAK_ON GPIO_WriteLow(VETRAK_PORT, VETRAK_PIN)
+#define VETRAK_REV GPIO_WriteReverse(VETRAK_PORT, VETRAK_PIN)
 /*
 #define LCD_RS_PORT GPIOF
 #define LCD_RW_PORT GPIOF
@@ -48,6 +54,7 @@
 #define LCD_D7_PIN GPIO_PIN_3
 */
 
+
 void setup(void)
 {
     CLK_HSIPrescalerConfig(CLK_PRESCALER_HSIDIV1);      // taktovani MCU na 16MHz
@@ -57,7 +64,7 @@ void setup(void)
     init_uart();
     init_milis();    //spustit časovač milis
     lcd_init();
-    /*
+    
     GPIO_Init(LCD_RS_PORT, LCD_RS_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_RW_PORT, LCD_RW_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_E_PORT, LCD_E_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
@@ -65,7 +72,13 @@ void setup(void)
     GPIO_Init(LCD_D5_PORT, LCD_D5_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_D6_PORT, LCD_D6_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_D7_PORT, LCD_D7_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
-    */
+
+    GPIO_Init (NCODER_CLK_PORT, NCODER_CLK_PIN, GPIO_MODE_IN_PU_NO_IT );
+    GPIO_Init (NCODER_DATA_PORT, NCODER_DATA_PIN, GPIO_MODE_IN_PU_NO_IT );
+    GPIO_Init(swt_PORT,swt_PIN,GPIO_MODE_IN_FL_NO_IT);
+
+    GPIO_Init(VETRAK_PORT,VETRAK_PIN,GPIO_MODE_OUT_PP_HIGH_SLOW);
+    
     // na pinech/vstupech ADC_IN2 (PB2) a ADC_IN3 (PB3) vypneme vstupní buffer
     ADC2_SchmittTriggerConfig(ADC2_SCHMITTTRIG_CHANNEL4, DISABLE);
     ADC2_SchmittTriggerConfig(ADC2_SCHMITTTRIG_CHANNEL5, DISABLE);
@@ -83,27 +96,28 @@ void setup(void)
     ADC2_Startup_Wait();
 }
 static int minuly = 0;
-int8_t get_ncoder(void)
-{
-    if (minuly == 0 && NCODER_GET_CLK == 1){
-        minuly = 1;
+int8_t check_ncoder(void){
+if (minuly == 0 && NCODER_GET_CLK == 1){
+    minuly = 1;
     if (NCODER_GET_DATA == 0){
         return 1;
     }else{
         return -1;
     }
-    }else if (minuly == 1 && NCODER_GET_CLK ==0){
-        minuly = 0;
-    if (NCODER_GET_DATA ==0){
-        return -1;
-    }else{
-        return 1;
-        }
-    }
+}
+else if (minuly == 1 && NCODER_GET_CLK ==0){
+    minuly = 0;
+if (NCODER_GET_DATA ==0){
+    return -1;
+}
+else{
+    return 1;
+}
+}
     return 0;
 }
 
-int main(void)
+void main(void)
 {
     char text[32];
     uint32_t voltage = 0;
@@ -111,12 +125,13 @@ int main(void)
     uint32_t time = 0;
     uint32_t time1 = 0;
     uint16_t ADCx= 0;
-    uint32_t hodnota = 0;
+    int32_t zadana_hodnota = 20;
+
     setup();
 
     while (1) {
 
-        if (milis() - time > 333 && BTN_PUSH) {
+        if (milis() - time > 333) {
             LED_TOGG; 
             time = milis();
             
@@ -124,18 +139,32 @@ int main(void)
             voltage = (uint32_t)3300 * ADCx / 1024;
             //temperature = ((uint32_t)33000 * ADCx - (uint32_t)4000 * 1024) / 1024 /195;
             temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;
+
             printf("value %ld \n \r", voltage);
             printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);
+            printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);
+            printf("ADCx: %ld \n \r",ADCx);
             
             lcd_clear();
             lcd_gotoxy(0,0);
             sprintf(text,"Teplota: %3u",temperature/10);
             lcd_puts(text);
+
+            lcd_gotoxy(0,1);
+            sprintf(text,"Hodnota: %3u",zadana_hodnota);
+            lcd_puts(text);
+
+            if (zadana_hodnota < temperature/10){
+               VETRAK_ON;
+            }
+            else{
+                VETRAK_OFF;
+            }
         }
-        if (milis() - time1 > 200){
-            time1=milis();
-            hodnota += get_ncoder();
-            printf("Žádaná hodnota: %ld \n \r",hodnota);
+        if (milis() - time1 > 2){
+            time1 = milis();
+            zadana_hodnota -= check_ncoder();
+            
         }
         
     }
