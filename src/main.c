@@ -64,7 +64,7 @@ void setup(void)
     init_uart();
     init_milis();    //spustit časovač milis
     lcd_init();
-    
+    /*
     GPIO_Init(LCD_RS_PORT, LCD_RS_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_RW_PORT, LCD_RW_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_E_PORT, LCD_E_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
@@ -72,7 +72,7 @@ void setup(void)
     GPIO_Init(LCD_D5_PORT, LCD_D5_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_D6_PORT, LCD_D6_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
     GPIO_Init(LCD_D7_PORT, LCD_D7_PIN, GPIO_MODE_OUT_PP_LOW_SLOW);
-
+    */
     GPIO_Init (NCODER_CLK_PORT, NCODER_CLK_PIN, GPIO_MODE_IN_PU_NO_IT );
     GPIO_Init (NCODER_DATA_PORT, NCODER_DATA_PIN, GPIO_MODE_IN_PU_NO_IT );
     GPIO_Init(swt_PORT,swt_PIN,GPIO_MODE_IN_FL_NO_IT);
@@ -95,6 +95,7 @@ void setup(void)
     // počkáme než se AD převodník rozběhne (~7us)
     ADC2_Startup_Wait();
 }
+//Nastavení ncoderu
 static int minuly = 0;
 int8_t check_ncoder(void){
 if (minuly == 0 && NCODER_GET_CLK == 1){
@@ -119,6 +120,7 @@ else{
 
 void main(void)
 {
+    // Proměnné
     char text[32];
     uint32_t voltage = 0;
     uint32_t temperature = 0;
@@ -139,9 +141,10 @@ void main(void)
             ADCx = ADC_get(ADC2_CHANNEL_4);
             voltage = (uint32_t)3300 * ADCx / 1024;
             //temperature = ((uint32_t)33000 * ADCx - (uint32_t)4000 * 1024) / 1024 /195;
-            temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;
-            printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);
+            temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;   //Výpočet pro převedení na teplotu
+            printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);             //Vytisknutí do kozole putty
 
+            // zobrazeni na displej - nefunguje :(
             lcd_clear();
             lcd_gotoxy(0,0);
             sprintf(text,"Teplota: %3u",temperature/10);
@@ -154,22 +157,22 @@ void main(void)
 
         if (milis() - time3 > 400){
             time3 = milis();
-            if (zadana_hodnota < temperature/10){
+            if (zadana_hodnota < temperature/10){   //podmínka pro zapnutí větráku
                VETRAK_ON;
             }
             else{
                 VETRAK_OFF;
             }
-            
+
             if (zadana_hodnota != zmena_minuly){
-                printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);
+                printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);     //pokud se změní hodnota otočením ncoderu tak se to výpiše do konzole putty
                 zmena_minuly = zadana_hodnota;
             }
         }
 
         if (milis() - time1 > 2){
             time1 = milis();
-            zadana_hodnota -= check_ncoder();
+            zadana_hodnota -= check_ncoder();       // kontrola ncoderu
         }
         
     }
