@@ -126,25 +126,22 @@ void main(void)
     uint32_t time1 = 0;
     uint16_t ADCx= 0;
     int32_t zadana_hodnota = 20;
+    uint8_t zmena_minuly = 0;
+    uint32_t time3 = 0;
 
     setup();
 
     while (1) {
 
-        if (milis() - time > 333) {
-            LED_TOGG; 
+        if (milis() - time > 333 && BTN_PUSH) {
             time = milis();
             
             ADCx = ADC_get(ADC2_CHANNEL_4);
             voltage = (uint32_t)3300 * ADCx / 1024;
             //temperature = ((uint32_t)33000 * ADCx - (uint32_t)4000 * 1024) / 1024 /195;
             temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;
-
-            printf("value %ld \n \r", voltage);
             printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);
-            printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);
-            printf("ADCx: %ld \n \r",ADCx);
-            
+
             lcd_clear();
             lcd_gotoxy(0,0);
             sprintf(text,"Teplota: %3u",temperature/10);
@@ -153,18 +150,26 @@ void main(void)
             lcd_gotoxy(0,1);
             sprintf(text,"Hodnota: %3u",zadana_hodnota);
             lcd_puts(text);
+        }
 
+        if (milis() - time3 > 400){
+            time3 = milis();
             if (zadana_hodnota < temperature/10){
                VETRAK_ON;
             }
             else{
                 VETRAK_OFF;
             }
+            
+            if (zadana_hodnota != zmena_minuly){
+                printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);
+                zmena_minuly = zadana_hodnota;
+            }
         }
+
         if (milis() - time1 > 2){
             time1 = milis();
             zadana_hodnota -= check_ncoder();
-            
         }
         
     }
