@@ -169,7 +169,7 @@ void main(void)
             }
 
             if (zadana_hodnota != zmena_minuly){
-                printf("Žádaná hodnota: %ld \n \r",zadana_hodnota);     //pokud se změní hodnota otočením ncoderu tak se to výpiše do konzole putty
+                printf("Žádaná hodnota: %ld °C \n \r",zadana_hodnota);     //pokud se změní hodnota otočením ncoderu tak se to výpiše do konzole putty
                 zmena_minuly = zadana_hodnota;
             }
         }
