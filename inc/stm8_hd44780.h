@@ -67,13 +67,13 @@
 
 // define your own pinout. Do not forgot that driver needs 5V tolerant pins
 #define LCD_RS_PORT     GPIOF
-#define LCD_RS_PIN  GPIO_PIN_7
+#define LCD_RS_PIN  GPIO_PIN_5
 
 #define LCD_RW_PORT     GPIOF
 #define LCD_RW_PIN  GPIO_PIN_6
 
 #define LCD_E_PORT      GPIOF
-#define LCD_E_PIN   GPIO_PIN_5
+#define LCD_E_PIN   GPIO_PIN_7
 
 #define LCD_D4_PORT     GPIOG
 #define LCD_D4_PIN  GPIO_PIN_0

@@ -9,7 +9,7 @@
 #include "delay.h"
 
 #define ADC_TIMEOUT 1000
-#define ADC_TSTAB 7 // èas pro stabilizaci ADC po zapnutí (7 us)
+#define ADC_TSTAB 7 // ï¿½as pro stabilizaci ADC po zapnutï¿½ (7 us)
 
 #ifdef STM8S208
 uint16_t ADC_get(ADC2_Channel_TypeDef ADC2_Channel); // perform conversion on selected channel (ADC must be enabled prior calling that function)
