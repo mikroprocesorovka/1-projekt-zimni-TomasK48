@@ -130,18 +130,22 @@ void main(void)
     int32_t zadana_hodnota = 20;
     uint8_t zmena_minuly = 0;
     uint32_t time3 = 0;
+    uint32_t time2 = 0;
 
     setup();
 
     while (1) {
-
-        if (milis() - time > 333 && BTN_PUSH) {
-            time = milis();
-            
+        if (milis() - time2 > 300){
+            time2 = milis();
             ADCx = ADC_get(ADC2_CHANNEL_4);
             voltage = (uint32_t)3300 * ADCx / 1024;
             //temperature = ((uint32_t)33000 * ADCx - (uint32_t)4000 * 1024) / 1024 /195;
             temperature = ((uint32_t)33000 * ADCx - (uint32_t)4096000 +19968/2) / 19968;   //Výpočet pro převedení na teplotu
+
+        }
+        if (milis() - time > 333 && BTN_PUSH) {
+            time = milis();
+          
             printf("teplota %ld.%ld °C \n \r", temperature/10,temperature%10);             //Vytisknutí do kozole putty
 
             // zobrazeni na displej - nefunguje :(
